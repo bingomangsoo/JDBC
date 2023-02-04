@@ -2,6 +2,7 @@ package hello.jdbc.repository;
 
 import hello.jdbc.domain.Member;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.jdbc.support.JdbcUtils;
 
 import javax.sql.DataSource;
@@ -9,16 +10,16 @@ import java.sql.*;
 import java.util.NoSuchElementException;
 
 /**
- * JDBC - ConnectionParam
- * 커넥션 유지가 필요한 findById, update 메서드 추가
- * 커넥션 유지가 필요하기 때문에 두 메서드에서 커넥션을 닫으면 안된다. 이후에도 커넥션을 계속 이어서 사용하기 때문이다. 서비스 로직이 끝날 때 트랜잭션을 종료하고 닫아야 한다.
+ * 트랜잭션 - 트랜잭션 매니저
+ * DataSourceUtils.getConnection()
+ * DataSourceUtils.releaseConnection()
  */
 @Slf4j
-public class MemberRepositoryV2 {
+public class MemberRepositoryV3 {
 
     private final DataSource dataSource; // dataSouce 주입을 받음
 
-    public MemberRepositoryV2(DataSource dataSource) {
+    public MemberRepositoryV3(DataSource dataSource) {
         this.dataSource = dataSource;
     }
 
@@ -71,35 +72,6 @@ public class MemberRepositoryV2 {
         }
     }
 
-    public Member findById(Connection con, String memberId) throws SQLException {
-        String sql = "select * from member where member_id = ?";
-
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-
-        try{
-//            con = getConnection(); 새로운 커넥션을 쓰는것이기 때문에 XXXX, 파라미터로 넘어온 커넥션을 써야한다.
-            pstmt = con.prepareStatement(sql);
-            pstmt.setString(1, memberId);
-            rs = pstmt.executeQuery();
-            if (rs.next()){ // 첫 번째 데이터가 있으면 true 없으면 false
-                Member member = new Member();
-                member.setMemberId(rs.getString("member_id"));
-                member.setMoney(rs.getInt("money"));
-                return member;
-            }else{
-                throw new NoSuchElementException("member not found memberId=" + memberId);
-            }
-        } catch (SQLException e) {
-            log.error("db error",e);
-            throw e;
-        } finally {
-            //connection은 여기서 닫지 않는다.
-            JdbcUtils.closeResultSet(rs);
-            JdbcUtils.closeStatement(pstmt);
-//            JdbcUtils.closeConnection(con); 커넥션을 여기서 닫아버리면 커넥션은 그대로 종료되기 때문에
-        }
-    }
 
     public void update(String memberId, int money) throws SQLException {
         String sql = "update member set money=? where member_id=?";
@@ -122,24 +94,6 @@ public class MemberRepositoryV2 {
     }
 
 
-    public void update(Connection con,String memberId, int money) throws SQLException {
-        String sql = "update member set money=? where member_id=?";
-        PreparedStatement pstmt = null;
-
-        try {
-            pstmt = con.prepareStatement(sql);
-            pstmt.setInt(1, money);
-            pstmt.setString(2, memberId);
-            int resultSize = pstmt.executeUpdate();
-            log.info("resultSize={}", resultSize);
-        } catch (SQLException e) {
-            log.error("db error", e);
-            throw e;
-        } finally {
-            //connection은 여기서 닫지 않는다.
-            JdbcUtils.closeStatement(pstmt);
-        }
-    }
 
     public void delete(String member_id) throws SQLException {
         String sql = "delete from member where member_id=?";
@@ -164,15 +118,17 @@ public class MemberRepositoryV2 {
 
         JdbcUtils.closeResultSet(rs);
         JdbcUtils.closeStatement(stmt);
-        JdbcUtils.closeConnection(con);
+        //주의! 트랜잭션 동기화를 사용하려면 DataSourceUtils를 사용해야 한다.
+        DataSourceUtils.releaseConnection(con,dataSource);
+//        JdbcUtils.closeConnection(con);
 
     }
 
 
 
     private Connection getConnection() throws SQLException {
-
-        Connection con = dataSource.getConnection();
+        //주의! 트랜잭션 동기화를 사용하려면 DataSourceUtils를 사용해야 한다.
+        Connection con = DataSourceUtils.getConnection(dataSource);
         log.info("getConnection={}, class={}",con, con.getClass());
 
         return con;

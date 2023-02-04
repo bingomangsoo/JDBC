@@ -1,7 +1,6 @@
 package hello.jdbc.service;
 
 import hello.jdbc.domain.Member;
-import hello.jdbc.repository.MemberRepositoryV2;
 import hello.jdbc.repository.MemberRepositoryV3;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
@@ -23,21 +22,20 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 
 @Slf4j
-class MemberServiceV3Test {
+class MemberServiceV3_2Test {
 
     public static final String MEMBER_A = "memberA";
     public static final String MEMBER_B = "memberB";
     public static final String MEMBER_EX = "ex";
     MemberRepositoryV3 memberRepository;
-    MemberServiceV3_1 memberService;
+    MemberServiceV3_2 memberService;
 
     @BeforeEach
     void before(){
         DriverManagerDataSource dataSource = new DriverManagerDataSource(URL, USERNAME, PASSWORD);
         memberRepository = new MemberRepositoryV3(dataSource);
         PlatformTransactionManager transactionManager = new DataSourceTransactionManager(dataSource);
-        memberService = new MemberServiceV3_1(transactionManager, memberRepository);
-
+        memberService = new MemberServiceV3_2(transactionManager, memberRepository);
     }
 
     @AfterEach  //다음 테스트에 영향을 주지 않도록 테스트까 끝나면 테스트 데이터를 제거

@@ -55,18 +55,6 @@ public class MemberServiceV3_2 {
         memberRepository.update(toId, toMember.getMoney()+ money);
     }
 
-    private static void release(Connection con) {
-        if(con != null){
-            try{
-//              con.close(); 커넥션 풀을 쓴 경우, 커넥션이 반환되는데, setAutoCommit이 false이기 때문에 그 반환된 커넥션은 setAutoCommit이 false를 가지게 된다.
-                con.setAutoCommit(true); // 커넥션 풀 고려
-                con.close();
-            }catch (Exception e){
-                log.info("error", e);
-            }
-        }
-    }
-
     private static void validation(Member toMember) { // ctrl+alt+m 으로 만들 수 있음
         if(toMember.getMemberId().equals("ex")){
             throw new IllegalStateException("이체 중 예외발생");

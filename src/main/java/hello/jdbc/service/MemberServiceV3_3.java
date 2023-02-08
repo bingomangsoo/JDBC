@@ -18,7 +18,6 @@ public class MemberServiceV3_3 {
 
     private final MemberRepositoryV3 memberRepository;
 
-    @Autowired
     public MemberServiceV3_3(MemberRepositoryV3 memberRepository) {
         this.memberRepository = memberRepository;
     }
